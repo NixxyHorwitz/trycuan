@@ -1,0 +1,4 @@
+# Semua request dipaksa masuk public/, sehingga file proyek tidak bisa diakses langsung.
+Options -Indexes
+RewriteEngine On
+RewriteRule ^(.*)$ public/$1 [L]
