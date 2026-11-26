@@ -52,7 +52,7 @@
   }
   window.turnstile.render(box, {
     sitekey: box.dataset.sitekey,
-    theme: 'dark',
+    theme: document.documentElement.dataset.theme || 'auto',
     callback: (response) => { clearTimeout(timer); leave(response); },
     'error-callback': () => { clearTimeout(timer); leave(''); return true; },
     'before-interactive-callback': () => clearTimeout(timer),

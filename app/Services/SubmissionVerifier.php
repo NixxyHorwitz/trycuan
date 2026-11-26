@@ -9,23 +9,24 @@ use App\Models\Participation;
 use App\Models\ShortLink;
 use App\Models\Submission;
 use App\Services\Threads\Identifier;
+use App\Services\Threads\PostLink;
 use App\Services\Threads\ThreadsSource;
 
 final class SubmissionVerifier
 {
-    public function __construct(private readonly ThreadsSource $source)
+    public function __construct(private readonly ThreadsSource $source, private readonly PostLink $links = new PostLink())
     {
     }
 
     /** @throws SubmissionException|VerificationException|\App\Services\Threads\ThreadsException */
     public function submit(array $account, int $campaignId, string $url): void
     {
-        $code = Identifier::codeFromUrl($url)
-            ?? throw new SubmissionException('Tempel URL utas, misalnya https://www.threads.com/@nama/post/ABC123');
         $campaign = Campaign::find($campaignId);
         $part = Participation::find((int) $account['id'], $campaignId);
         if (!$campaign || !$part) throw new SubmissionException('Ikuti campaign ini dulu.');
         $this->ensureOpen($campaign);
+        // Link bagikan butuh satu request, jadi setelah syarat yang bisa dicek lokal.
+        $code = $this->links->code($url) ?? throw new SubmissionException(PostLink::HELP);
         $postId = Identifier::postId($code);
         if (Submission::exists($postId)) throw new SubmissionException('Utas ini sudah pernah dikirim.');
 
@@ -62,6 +63,9 @@ final class SubmissionVerifier
                 $part['id'], $postId, $code, mb_substr(trim($post->text), 0, 300),
                 date('Y-m-d H:i:s', $post->postedAt), $post->views, $post->likes,
             ]);
+            if ($post->views !== null) {
+                $db->prepare('INSERT INTO view_snapshots (submission_id, views, likes) VALUES (LAST_INSERT_ID(), ?, ?)')->execute([$post->views, $post->likes]);
+            }
             $db->commit();
         } catch (\Throwable $error) {
             $db->rollBack();

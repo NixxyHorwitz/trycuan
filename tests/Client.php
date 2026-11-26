@@ -26,11 +26,11 @@ final class Client
         return $this->send($path);
     }
 
-    public function post(string $path, array $data, ?string $formPath = null): self
+    public function post(string $path, array $data, ?string $formPath = null, bool $multipart = false): self
     {
         if ($formPath) $data['_csrf'] = $this->get($formPath)->csrf();
         curl_setopt($this->curl, CURLOPT_POST, true);
-        curl_setopt($this->curl, CURLOPT_POSTFIELDS, http_build_query($data));
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, $multipart ? $data : http_build_query($data));
         return $this->send($path);
     }
 
@@ -42,8 +42,10 @@ final class Client
 
     public function cookie(): string
     {
-        $line = curl_getinfo($this->curl, CURLINFO_COOKIELIST)[0] ?? '';
-        return substr((string) strrchr($line, "\t"), 1);
+        foreach (curl_getinfo($this->curl, CURLINFO_COOKIELIST) as $line) {
+            if (str_contains($line, "	trycuan_session	")) return substr((string) strrchr($line, "	"), 1);
+        }
+        return '';
     }
 
     private function send(string $path): self

@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Core\ClientIp;
 use App\Core\Database;
 use App\Core\Env;
+use App\Core\Http;
 
 /** Perangkat dikenali lewat cookie first-party acak yang ditandatangani. */
 final class Device
@@ -22,10 +23,9 @@ final class Device
     public static function issue(): string
     {
         $value = self::cookie() ?? self::create();
-        $https = $_SERVER['HTTPS'] ?? '';
         setcookie(self::COOKIE, $value, [
             'expires' => time() + 365 * 86400, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax',
-            'secure' => $https !== '' && $https !== 'off',
+            'secure' => Http::secure(),
         ]);
         return $value;
     }

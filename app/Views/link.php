@@ -1,6 +1,9 @@
 <section class="card go-card">
   <span class="mark"><?= icon('trend') ?></span>
-  <?php if (!$campaign): ?>
+  <?php if ($campaigns): ?>
+  <h1>Pilih tujuan</h1>
+  <?php foreach ($campaigns as $c): ?><a class="btn outline block" href="/<?= e($code) ?>?c=<?= (int) $c['id'] ?>" rel="nofollow"><?= e($c['title']) ?></a><?php endforeach ?>
+  <?php elseif (!$campaign): ?>
   <h1>Link belum aktif</h1>
   <p class="hint">Belum ada tujuan untuk link ini. Coba lagi nanti.</p>
   <?php else: ?>

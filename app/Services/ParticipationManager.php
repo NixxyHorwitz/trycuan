@@ -6,10 +6,11 @@ namespace App\Services;
 use App\Core\Database;
 use App\Models\Campaign;
 use App\Models\Participation;
+use App\Models\Setting;
 
 final class ParticipationManager
 {
-    /** Satu akun hanya boleh punya satu campaign yang berjalan. */
+    /** Kecuali mode multi, satu akun hanya boleh punya satu campaign yang berjalan. */
     public function join(array $account, int $campaignId): void
     {
         $this->transaction(function () use ($account, $campaignId): void {
@@ -18,8 +19,9 @@ final class ParticipationManager
             $db->prepare('SELECT id FROM threads_accounts WHERE id = ? FOR UPDATE')->execute([$account['id']]);
             $campaign = Campaign::find($campaignId, true);
             if (!$campaign || Campaign::state($campaign) !== 'open') throw new SubmissionException('Campaign ini sedang tidak menerima peserta.');
-            $current = Participation::current((int) $account['id']);
-            if ($current && (int) $current['id'] === $campaignId) return;
+            if (Participation::find((int) $account['id'], $campaignId)) return;
+            if (!Campaign::offered($campaignId)) throw new SubmissionException('Saat ini hanya campaign utama yang bisa diikuti.');
+            $current = Setting::str('campaign_mode') === 'multi' ? null : Participation::current((int) $account['id']);
             if ($current) throw new SubmissionException('Akun kamu masih mengikuti campaign ' . $current['title'] . '.');
             $db->prepare('INSERT INTO participations (account_id, campaign_id, rate_snapshot, cap_snapshot) VALUES (?, ?, ?, ?)')
                 ->execute([$account['id'], $campaignId, $campaign['rate_per_1k'], $campaign['cap_per_account']]);

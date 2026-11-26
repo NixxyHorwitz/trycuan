@@ -247,7 +247,7 @@ try {
     foreach ([$draft, $paused, $past, 999999999] as $id) $check('Campaign tertutup 404', $w->get("/campaign/$id")->status === 404);
     $check('ID tidak valid 404', $w->get('/campaign/0')->status === 404 && $w->get('/campaign/1x')->status === 404 && $w->get('/campaign/99999999999999999999')->status === 404);
     $check('Tanpa akun Threads diarahkan', $w->post("/campaign/$main/ikut", [], "/profil")->status === 303 && str_contains($w->headers, '/akun-threads'));
-    $check('Freelancer ditolak di admin campaign', $w->get('/admin/campaign')->status === 403 && $w->post('/admin/campaign/baru', $form, '/profil')->status === 403);
+    $check('Freelancer ditolak di admin campaign', $w->get('/admin/campaign')->status === 303 && $w->post('/admin/campaign/baru', $form, '/profil')->status === 403);
 
     $wa = new Client($base);
     $wa->post('/masuk', ['email' => "camp-a-$run@example.test", 'password' => $password], '/masuk');
@@ -263,7 +263,7 @@ try {
     $check('Dashboard memuat campaign', str_contains($wb->get('/dashboard')->body, "Lain $run"));
 
     $wd = new Client($base);
-    $wd->post('/masuk', ['email' => "camp-d-$run@example.test", 'password' => $password], '/masuk');
+    $wd->post('/admin/masuk', ['email' => "camp-d-$run@example.test", 'password' => $password], '/admin/masuk');
     $check('Admin membuat campaign', $wd->post('/admin/campaign/baru', ['title' => "Web $run"] + $form, '/admin/campaign/baru')->status === 303);
     $st = $db->prepare('SELECT id FROM campaigns WHERE title = ?');
     $st->execute(["Web $run"]);

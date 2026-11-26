@@ -64,6 +64,8 @@ Hanya dipicu aksi user, tanpa cron:
 - **Refresh card akun:** memperbarui semua utas akun secara berurutan dengan progres (misalnya 3/8). Cooldown 60 detik per akun [usulan], dicek di server. Tiap baris utas juga bisa direfresh sendiri.
 - **Ajukan penarikan:** semua utas yang dihitung wajib dibaca ulang.
 
+Setelah campaign selesai, views masih bisa diperbarui 24 jam [usulan], lalu angkanya beku; sampai 30 hari utas masih bisa dicek ulang untuk pencairan, tetapi views hanya bisa turun. Estimasi fee memesan anggaran: siapa yang lebih dulu mencapai kelipatan, dia yang dapat.
+
 Gagal baca: pertahankan angka lama, tandai utasnya "Gagal diperbarui", dan tandai total akun "Sebagian belum terbaru". Circuit breaker menghentikan request sementara setelah banyak kegagalan beruntun.
 
 ### 3.4 Rumus fee per akun
@@ -94,6 +96,8 @@ Views dijumlahkan **dulu**, baru dibulatkan. Sisa di bawah 1.000 terbawa ke keli
 - Minimum Rp50.000 [usulan], ke bank atau e-wallet
 - Saldo ditahan saat diajukan; admin transfer manual, lalu mengunggah bukti
 - Status: `pending → paid / rejected` (rejected mengembalikan saldo)
+- Fee masuk saldo lewat persetujuan admin: level fee lewat masa tahan dan semua utas yang dihitung terbaca ulang setelahnya. Kredit otomatis untuk akun berstatus Wajar bisa diaktifkan di pengaturan (bawaan: nonaktif).
+- Satu penarikan diproses pada satu waktu; ganti rekening butuh password
 - Semua mutasi tercatat di ledger append-only; saldo dihitung dari ledger
 
 ### 3.6 Shortlink dan filter klik per akun
@@ -142,7 +146,7 @@ CTR akun = klik valid / total kenaikan views terverifikasi x 100%   (rentang wak
 | Perlu review | CTR terlalu rendah/tinggi, banyak `held`, atau ada lonjakan | Ditahan sampai diputuskan admin |
 | Ditolak | Admin menemukan bukti kecurangan | Fee belum cair dibatalkan, tercatat di audit |
 
-Batas wajar memakai median dan sebaran campaign, bukan angka tebakan. Fee dihitung dari views; klik menjadi **gerbang pencairan**, bukan pengali atau pemotong otomatis. User melihat total views, klik valid, dan status; skor serta alasan rinci hanya untuk admin agar filter tidak mudah diakali.
+Batas wajar memakai median dan sebaran campaign (skor z robust pada log CTR, batas 3,5), bukan angka tebakan. Flag lain: banyak klik ditahan, lonjakan views tanpa klik, suka sangat rendah, link dilepas, rekening atau perangkat login sama. Fee dihitung dari views; klik menjadi **gerbang pencairan**, bukan pengali atau pemotong otomatis. User melihat total views, klik valid, dan status; skor serta alasan rinci hanya untuk admin agar filter tidak mudah diakali.
 
 ## 4. Anti-kecurangan
 
@@ -174,7 +178,6 @@ Target realistis: membuat kecurangan lebih mahal daripada fee-nya, menahan yang 
 | `user_devices` | user_id, device_id (unique gabungan), last_login_at |
 | `click_tokens` | nonce unique, used_at (token ditandatangani; hanya yang terpakai disimpan) |
 | `valid_click_keys` | short_link_id, campaign_id, device_id (unique gabungan; mencegah hitung ganda paralel) |
-| `fraud_reviews` | id, participation_id, views_delta, valid_clicks, score, reasons_json, status, reviewed_by |
 | `view_snapshots` | id, submission_id, views, likes, checked_at |
 | `ledger` | id, user_id, type, amount, participation_id, withdrawal_id, idempotency_key unique, created_at |
 | `payout_methods` | id, user_id, provider, account_name, account_no (terenkripsi) |
@@ -255,10 +258,10 @@ trycuan/
 | 3 (selesai) | Verifikasi akun Threads | Kode di bio cocok menautkan `pk`; kode salah/kedaluwarsa ditolak |
 | 4 (selesai) | Campaign + submit utas | Utas milik orang lain, duplikat, dan lewat periode ditolak |
 | 5 (selesai) | Shortlink + klik | Link di bio terdeteksi; posting sebelum link ditolak; tiap lapis filter punya tes; klik ganda paralel hanya dihitung sekali; IP bersama tidak otomatis ditolak |
-| 6 | Card akun, refresh, fee | Keempat contoh fee akun lulus; utas pending tidak dihitung; views naik-turun tidak dibayar ganda; cooldown dan cap berlaku |
-| 7 | Ledger + penarikan | Klik ganda/request paralel tidak menggandakan saldo |
-| 8 | Panel admin | Review, bandingkan views vs klik, bayar, flag, dan log scraper berfungsi |
-| 9 | Hardening + deploy | Reset password via email, Audit akses, uji dari IP VPS, backup DB |
+| 6 (selesai) | Card akun, refresh, fee | Keempat contoh fee akun lulus; utas pending tidak dihitung; views naik-turun tidak dibayar ganda; cooldown dan cap berlaku |
+| 7 (selesai) | Ledger + penarikan | Klik ganda/request paralel tidak menggandakan saldo |
+| 8 (selesai) | Panel admin | Review, bandingkan views vs klik, bayar, flag, dan log scraper berfungsi |
+| 9 (kode selesai; uji VPS, SMTP, dan domain menunggu server) | Hardening + deploy | Reset password via email, Audit akses, uji dari IP VPS, backup DB |
 
 Tahap 1 sampai 6 cukup untuk demo. Klik dari publik baru bisa diuji setelah `trycuan.online` online, karena `trycuan.test` hanya dapat dibuka di device ini. Pembayaran sungguhan baru dibuka setelah tahap 9.
 

@@ -1,4 +1,12 @@
 .env
 /storage/sessions/*
 /storage/logs/*
+/storage/proofs/*
+/storage/backups/*
+/storage/ip/
 !.gitkeep
+/node_modules/
+/storage/admin-lokal.txt
+/public/media/*
+!/public/media/.gitkeep
+!/public/media/.htaccess

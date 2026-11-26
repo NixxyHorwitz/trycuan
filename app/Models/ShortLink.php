@@ -26,15 +26,17 @@ final class ShortLink
     }
 
     /** Link beserta pemilik dan campaign terbukanya. Null bila link tidak ada atau user diblokir. */
-    public static function resolve(string $code): ?array
+    public static function resolve(string $code, ?int $campaignId = null): ?array
     {
         $st = Database::pdo()->prepare("SELECT l.*, a.user_id FROM short_links l JOIN threads_accounts a ON a.id = l.account_id
             JOIN users u ON u.id = a.user_id WHERE l.code = ? AND u.status = 'active'");
         $st->execute([$code]);
         $link = $st->fetch();
         if (!$link) return null;
-        $campaign = Participation::current((int) $link['account_id']);
-        $link['campaign'] = $campaign && Campaign::state($campaign) === 'open' ? $campaign : null;
+        $link['campaigns'] = array_values(array_filter(Participation::running((int) $link['account_id']), static fn (array $c): bool => Campaign::state($c) === 'open'));
+        // Beberapa campaign: pengunjung memilih, jadi klik tercatat di campaign yang tepat.
+        $chosen = $campaignId === null ? $link['campaigns'] : array_values(array_filter($link['campaigns'], static fn (array $c): bool => (int) $c['id'] === $campaignId));
+        $link['campaign'] = count($chosen) === 1 ? $chosen[0] : null;
         return $link;
     }
 

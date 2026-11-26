@@ -19,10 +19,10 @@ final class PageParser
             && isset($n['user']['username'], $n['taken_at']) && (isset($n['user']['pk']) || isset($n['user']['id'])));
         if (!$media) throw new ThreadsException(Outcome::ParseError, 'Node utas tidak ada', $page->status);
 
-        // view_counts milik halaman, bukan node utas: pastikan halaman ini memang halaman utas tersebut.
+        // view_counts milik halaman, bukan node utas. Views opsional: utas baru sering belum memilikinya.
         $props = $this->first($docs, static fn (array $n): bool => isset($n['post_id'], $n['post_author_id']) && is_scalar($n['post_id']));
         $ownerPk = (string) ($media['user']['pk'] ?? $media['user']['id']);
-        if (!$props || (string) $props['post_id'] !== Identifier::postId($code) || (string) $props['post_author_id'] !== $ownerPk) {
+        if ($props && ((string) $props['post_id'] !== Identifier::postId($code) || (string) $props['post_author_id'] !== $ownerPk)) {
             throw new ThreadsException(Outcome::ParseError, 'ID halaman tidak cocok', $page->status);
         }
 
@@ -32,7 +32,7 @@ final class PageParser
             $this->usernameOf($media['user']['username'], $page),
             (int) $media['taken_at'],
             is_string($media['caption']['text'] ?? null) ? $media['caption']['text'] : '',
-            $this->views($docs, $page),
+            $props ? $this->views($docs, $page) : null,
             $this->count($media['like_count'] ?? null),
             ($media['text_post_app_info']['is_reply'] ?? false) === true,
             is_string($media['text_post_app_info']['tag_header']['display_name'] ?? null) ? $media['text_post_app_info']['tag_header']['display_name'] : '',
@@ -81,7 +81,7 @@ final class PageParser
         if (isset($query['error'])) throw new ThreadsException(Outcome::NotFound, '', 200);
     }
 
-    /** Null bila field ada tetapi kosong; field hilang berarti struktur Threads berubah. */
+    /** Null bila Threads tidak menampilkan angkanya. */
     private function views(array $docs, Page $page): ?int
     {
         $found = [];
@@ -89,7 +89,6 @@ final class PageParser
             if (array_key_exists('view_counts', $node)) $found[] = $node['view_counts'];
             return false;
         });
-        if (!$found) throw new ThreadsException(Outcome::ParseError, 'Field views hilang', $page->status);
 
         $values = [];
         foreach ($found as $value) {

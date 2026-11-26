@@ -42,4 +42,23 @@ final class ScrapeGuard
         }
         // LoginRequired dan NotFound tidak dihitung: salah ketik user memberi hasil yang sama.
     }
+
+    /** Ringkasan 24 jam untuk admin. */
+    public static function health(): array
+    {
+        $db = Database::pdo();
+        $row = $db->query("SELECT COUNT(*) AS total, COALESCE(SUM(outcome = 'ok'), 0) AS ok, COALESCE(AVG(duration_ms), 0) AS avg FROM scrape_logs WHERE created_at > NOW() - INTERVAL 1 DAY")->fetch();
+        $state = $db->query('SELECT failures, open_until FROM scrape_state WHERE id = 1')->fetch();
+        return ['paused' => $state['open_until'] > time()] + $state + $row;
+    }
+
+    public static function recent(): array
+    {
+        return Database::pdo()->query('SELECT * FROM scrape_logs ORDER BY id DESC LIMIT 50')->fetchAll();
+    }
+
+    public static function resume(): void
+    {
+        Database::pdo()->exec('UPDATE scrape_state SET failures = 0, open_until = 0 WHERE id = 1');
+    }
 }

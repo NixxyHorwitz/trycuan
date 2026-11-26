@@ -1,1 +1,1 @@
-<?php if ($flash): ?><div class="notice ok" role="status"><?= icon('check') ?><span><?= e($flash) ?></span></div><?php endif ?>
+<?php if ($flash): ?><div class="notice ok" role="status" data-flash><?= e($flash) ?></div><?php endif ?>

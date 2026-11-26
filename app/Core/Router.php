@@ -21,12 +21,19 @@ final class Router
         return preg_match('~^/(?=[^/]*[A-Z])(?=[^/]*\d)[A-Za-z0-9]{7}(/klik)?/?(\?|$)~', $uri) === 1;
     }
 
+    /** @return array<string, array<string, array{0: array, 1: string}>> */
+    public function routes(): array
+    {
+        return $this->routes;
+    }
+
     public function dispatch(string $method, string $uri): void
     {
         $path = '/' . trim(explode('?', $uri, 2)[0], '/');
         if ($method === 'HEAD') $method = 'GET';
 
         // Satu angka di path boleh cocok dengan {id}.
+        $page = $path;
         $args = [];
         if (self::isShortLink($uri)) {
             $args = [substr($path, 1, 7)];
@@ -46,8 +53,12 @@ final class Router
         if ($method === 'POST' && $access !== 'beacon') Csrf::verify();
 
         $user = $access === 'beacon' ? null : Auth::user();
-        if ($access === 'guest' && $user) redirect('/dashboard');
-        if (in_array($access, ['auth', 'admin'], true) && !$user) redirect('/masuk');
+        if ($access === 'guest' && $user) redirect(Area::home());
+        if (in_array($access, ['auth', 'admin'], true) && !$user) {
+            // Jalur sudah dinormalkan, jadi tidak bisa mengarah ke situs lain.
+            if ($method === 'GET' && !preg_match('~/(ekspor|bukti|cari|materi/\d+)$~', $page)) $_SESSION['to'] = $page;
+            redirect(Area::login());
+        }
         if ($access === 'admin' && $user['role'] !== 'admin') throw new HttpException(403, 'Halaman ini khusus admin.');
 
         // Dipakai filter klik untuk mengenali perangkat pemilik akun.

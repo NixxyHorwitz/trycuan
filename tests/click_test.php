@@ -322,8 +322,9 @@ try {
     $check('Perangkat login tercatat', (int) $db->query("SELECT COUNT(*) FROM user_devices WHERE user_id = {$ids['a']}")->fetchColumn() === 2);
     RateLimiter::hit("link-gap:{$ids['a']}", 1, 10);
     $check('Jeda cek link berlaku', $u->post('/akun-threads/link', [], '/akun-threads')->status === 429 && $u->get('/akun-threads/link')->status === 200);
-    $check('Log klik khusus admin', $u->get('/admin/klik')->status === 403);
+    $check('Log klik khusus admin', $u->get('/admin/klik')->status === 303);
     $db->exec("UPDATE users SET role = 'admin' WHERE id = {$ids['a']}");
+    $u->post('/admin/masuk', ['email' => "click-a-$run@example.test", 'password' => $password], '/admin/masuk');
     $hit(['userAgent' => 'curl/8']);
     $check('Log klik admin', $u->get('/admin/klik')->status === 200 && str_contains($u->body, 'Tidak valid'));
 } finally {

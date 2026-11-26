@@ -1,5 +1,1 @@
-<section class="auth card">
-  <p class="hint">Kode <?= (int) $code ?></p>
-  <h1><?= e($message) ?></h1>
-  <a class="btn primary" href="/">Kembali ke beranda</a>
-</section>
+<section class="empty"><?= icon('alert') ?><p class="hint">Kode <?= (int) $code ?></p><h1><?= e($message) ?></h1><a class="btn primary" href="<?= App\Core\Area::isAdmin() ? '/admin' : '/' ?>">Kembali</a></section>

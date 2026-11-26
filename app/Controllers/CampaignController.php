@@ -9,16 +9,20 @@ use App\Core\RateLimiter;
 use App\Core\Session;
 use App\Core\View;
 use App\Models\Campaign;
+use App\Models\CampaignDoc;
 use App\Models\Participation;
+use App\Models\Setting;
 use App\Models\ShortLink;
 use App\Models\Submission;
 use App\Models\ThreadsAccount;
 use App\Services\ParticipationManager;
 use App\Services\SubmissionException;
 use App\Services\SubmissionVerifier;
+use App\Services\Threads\PostLink;
 use App\Services\Threads\ThreadsException;
 use App\Services\Threads\ThreadsScraper;
 use App\Services\VerificationException;
+use App\Services\ViewReports;
 
 final class CampaignController
 {
@@ -81,7 +85,7 @@ final class CampaignController
             $this->show($id, ['url' => $error->getMessage()], $url);
             return;
         } catch (ThreadsException $error) {
-            $this->show($id, ['url' => $error->outcome->message()], $url);
+            $this->show($id, ['url' => PostLink::failure($error)], $url);
             return;
         }
         Session::flash('Utas diterima dan menunggu persetujuan admin.');
@@ -107,7 +111,8 @@ final class CampaignController
         if ($state === 'draft' || (!$part && in_array($state, ['ended', 'paused'], true))) {
             throw new HttpException(404, 'Campaign tidak ditemukan atau sudah ditutup.');
         }
-        $current = $account ? Participation::current((int) $account['id']) : null;
+        if (!$part && !Campaign::offered($id)) throw new HttpException(404, 'Campaign tidak ditemukan atau sudah ditutup.');
+        $current = $account && Setting::str('campaign_mode') !== 'multi' ? Participation::current((int) $account['id']) : null;
         View::render('campaigns/show', [
             'title' => $campaign['title'],
             'active' => 'campaign',
@@ -117,7 +122,9 @@ final class CampaignController
             'account' => $account,
             'part' => $part,
             'linked' => $part && ShortLink::forAccount((int) $account['id'])['link_verified_at'] !== null,
+            'reportable' => $part && ViewReports::open($campaign),
             'busy' => $current && (int) $current['id'] !== $id ? $current : null,
+            'docs' => count(CampaignDoc::forCampaign($id, true)),
             'posts' => $part ? Submission::forParticipation((int) $part['id']) : [],
             'errors' => $errors,
             'old' => ['url' => $url],

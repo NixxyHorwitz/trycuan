@@ -22,6 +22,14 @@ final class RateLimiter
         return $hits <= $max;
     }
 
+    /** Sisa kesempatan sebelum dibatasi. */
+    public static function left(string $key, int $max): int
+    {
+        $st = Database::pdo()->prepare('SELECT hits FROM rate_limits WHERE limit_key = ? AND expires_at > ?');
+        $st->execute([self::key($key), time()]);
+        return max(0, $max - (int) $st->fetchColumn());
+    }
+
     public static function clear(string $key): void
     {
         Database::pdo()->prepare('DELETE FROM rate_limits WHERE limit_key = ?')->execute([self::key($key)]);

@@ -1,0 +1,1 @@
+<button class="icon-btn" type="button" data-theme-toggle aria-label="Ganti tema terang atau gelap"><span class="only-light"><?= icon('moon') ?></span><span class="only-dark"><?= icon('sun') ?></span></button>

@@ -1,0 +1,7 @@
+# Semua aset dipanggil dengan versi (?v=) atau nama ber-hash.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/css application/javascript text/javascript image/svg+xml
+</IfModule>

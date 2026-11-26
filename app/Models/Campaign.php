@@ -19,12 +19,25 @@ final class Campaign
     /** Campaign yang sedang atau akan berjalan, ditambah yang pernah diikuti akun. */
     public static function visible(?int $accountId): array
     {
-        $st = Database::pdo()->prepare("SELECT c.*, p.id AS participation_id FROM campaigns c
+        $focus = self::focus();
+        $st = Database::pdo()->prepare("SELECT c.*, p.id AS participation_id, (SELECT COUNT(*) FROM campaign_docs d WHERE d.campaign_id = c.id AND d.status = 'published') AS docs FROM campaigns c
             LEFT JOIN participations p ON p.campaign_id = c.id AND p.account_id = ?
-            WHERE c.status <> 'draft' AND (p.id IS NOT NULL OR (c.status = 'active' AND c.ends_at > NOW()))
+            WHERE c.status <> 'draft' AND (p.id IS NOT NULL OR (c.status = 'active' AND c.ends_at > NOW() AND (? = 0 OR c.id = ?)))
             ORDER BY (c.status IN ('active','paused') AND c.ends_at > NOW()) DESC, p.id IS NULL, c.ends_at");
-        $st->execute([$accountId ?? 0]);
+        $st->execute([$accountId ?? 0, $focus, $focus]);
         return $st->fetchAll();
+    }
+
+    /** Campaign utama pada mode fokus; 0 berarti semua campaign terbuka. */
+    public static function focus(): int
+    {
+        return Setting::str('campaign_mode') === 'focus' ? Setting::int('campaign_focus') : 0;
+    }
+
+    /** Campaign ini ditawarkan ke akun yang belum ikut. */
+    public static function offered(int $id): bool
+    {
+        return in_array(self::focus(), [0, $id], true);
     }
 
     public static function all(): array

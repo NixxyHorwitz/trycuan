@@ -14,13 +14,14 @@ final class ClickController
     {
         View::render('admin/clicks', [
             'title' => 'Log klik',
-            'active' => 'admin',
-            'clicks' => Click::recent(),
+            'active' => 'clicks',
+            'status' => $status = in_array(query('status'), ['valid', 'held', 'invalid'], true) ? query('status') : '',
+            'clicks' => Click::recent(100, $status),
             'layers' => [
                 'Tantangan Turnstile' => Turnstile::siteKey() !== '',
                 'Negara dan IP asli (Cloudflare)' => ClientIp::behindCloudflare(),
                 'Daftar IP hosting' => is_file(ROOT . '/storage/ip/hosting.txt'),
             ],
-        ], 'app');
+        ], 'admin');
     }
 }

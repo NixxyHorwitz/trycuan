@@ -19,7 +19,7 @@ final class LinkController
 {
     public function show(string $code): void
     {
-        $link = ShortLink::resolve($code) ?? throw new HttpException(404, 'Link tidak ditemukan.');
+        $link = ShortLink::resolve($code, ctype_digit(query('c')) ? (int) query('c') : null) ?? throw new HttpException(404, 'Link tidak ditemukan.');
         header('X-Robots-Tag: noindex, nofollow');
         $campaign = $link['campaign'];
         $siteKey = $campaign ? Turnstile::siteKey() : '';
@@ -27,8 +27,9 @@ final class LinkController
             header("Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
         }
         View::render('link', [
-            'title' => $campaign['title'] ?? 'Link belum aktif',
+            'title' => $campaign['title'] ?? ($link['campaigns'] ? 'Pilih tujuan' : 'Link belum aktif'),
             'campaign' => $campaign,
+            'campaigns' => $campaign ? [] : $link['campaigns'],
             'code' => $code,
             'siteKey' => $siteKey,
             'token' => $campaign ? Token::make($code, (int) $campaign['id'], Device::issue()) : '',

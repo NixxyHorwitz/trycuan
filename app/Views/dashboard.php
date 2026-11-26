@@ -1,14 +1,28 @@
-<div class="page-head"><div><h1>Halo, <?= e($user['name']) ?></h1><p>Ringkasan akun dan langkah kamu.</p></div></div>
-<div class="stats">
-  <div class="card stat"><span>Total views</span><strong>0</strong></div>
-  <div class="card stat"><span>Klik valid</span><strong><?= number_format($clicks, 0, ',', '.') ?></strong></div>
-  <div class="card stat"><span>Estimasi fee</span><strong>Rp0</strong></div>
-  <div class="card stat"><span>Saldo</span><strong>Rp0</strong></div>
-</div>
-<section class="card">
-  <h2>Mulai dari sini</h2>
+<?php
+$part = $card['part'] ?? null;
+$ready = $card['credit']['ready'] ?? 0;
+$steps = !$posts || !$campaign || !$linked;
+?>
+<div class="page-head"><h1>Halo, <?= e(explode(' ', $user['name'])[0]) ?></h1><p><?= $campaign ? e($campaign['title']) : 'Belum ada campaign yang diikuti' ?></p></div>
+<?php if ($notice): ?><a class="notice <?= $notice['level'] === 'penting' ? 'warn' : 'ok' ?>" href="/pengumuman"><?= icon('bell') ?><span><strong><?= e($notice['title']) ?></strong></span></a><?php endif ?>
+<section class="hero-card">
+  <div class="row">
+    <div><p class="hint">Bisa ditarik</p><p class="amount"><?= e(rupiah($balance)) ?></p></div>
+    <div class="actions"><a class="btn primary" href="/saldo"><?= icon('wallet') ?>Tarik saldo</a><a class="btn outline" href="/campaign">Cari campaign</a></div>
+  </div>
+  <div class="hero-stats">
+    <div><span>Estimasi fee</span><strong><?= e(rupiah((int) ($part['fee_total'] ?? 0))) ?></strong></div>
+    <div><span>Diperiksa</span><strong><?= e(rupiah($ready)) ?></strong></div>
+    <div><span>Utas</span><strong><?= (int) $posts ?></strong></div>
+  </div>
+</section>
+<?php if ($steps): ?>
+<section class="card gap">
+  <?php $done = 1 + (int) (bool) $account + (int) (bool) $campaign + (int) $linked + (int) (bool) $posts; ?>
+  <div class="card-head"><h2>Mulai dari sini</h2><span class="tag on"><?= $done ?> dari 5</span></div>
+  <progress class="mb-4" max="5" value="<?= $done ?>" aria-label="Langkah selesai"></progress>
   <ol class="checklist">
-    <li class="done"><span class="dot"><?= icon('check') ?></span><div><strong>Buat akun TryCuan</strong><p>Selesai</p></div></li>
+    <li class="done"><span class="dot"><?= icon('check') ?></span><div><strong>Buat akun <?= e(setting('site_name')) ?></strong></div></li>
     <?php if ($account): ?>
     <li class="done"><span class="dot"><?= icon('check') ?></span><div><strong>Verifikasi akun Threads</strong><p>@<?= e($account['username']) ?></p></div></li>
     <?php else: ?>
@@ -27,3 +41,6 @@
     <li<?= $posts ? ' class="done"' : '' ?>><span class="dot"><?= $posts ? icon('check') : '5' ?></span><div><strong>Kirim URL utas</strong><p><?= $posts ? (int) $posts . ' utas terkirim' : 'Views utas yang disetujui masuk ke total akun.' ?></p></div><?php if ($campaign): ?><a class="btn <?= $posts || !$linked ? 'outline' : 'primary' ?> step" href="/campaign/<?= (int) $campaign['id'] ?>">Buka campaign</a><?php endif ?></li>
   </ol>
 </section>
+<?php endif ?>
+<?php if (count($running) > 1): ?><div class="chips gap mb-0!"><?php foreach ($running as $c): ?><a class="chip" href="/dashboard?campaign=<?= (int) $c['id'] ?>" data-turbo-action="replace"<?= $campaign && (int) $c['id'] === (int) $campaign['id'] ? ' aria-current="true"' : '' ?>><?= e($c['title']) ?></a><?php endforeach ?></div><?php endif ?>
+<?php if ($card): ?><div class="gap"><?php require ROOT . '/app/Views/partials/account_card.php' ?></div><?php endif ?>

@@ -1,0 +1,47 @@
+ALTER TABLE users
+  ADD avatar_style VARCHAR(30) NOT NULL DEFAULT 'thumbs',
+  ADD avatar_seed VARCHAR(32) NOT NULL DEFAULT '',
+  ADD google_sub VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL UNIQUE,
+  ADD has_password TINYINT(1) NOT NULL DEFAULT 1;
+
+UPDATE users SET avatar_seed = SUBSTRING(MD5(CONCAT(id, RAND(), UUID())), 1, 16);
+
+CREATE TABLE campaign_docs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  campaign_id BIGINT UNSIGNED NOT NULL,
+  kind ENUM('panduan','materi') NOT NULL DEFAULT 'panduan',
+  title VARCHAR(120) NOT NULL,
+  body MEDIUMTEXT NOT NULL,
+  sort INT NOT NULL DEFAULT 0,
+  status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (campaign_id, status, sort),
+  CONSTRAINT fk_doc_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE campaign_files (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  campaign_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  file VARCHAR(40) CHARACTER SET ascii NOT NULL,
+  size INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (campaign_id),
+  CONSTRAINT fk_file_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE visits (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  visitor CHAR(16) CHARACTER SET ascii NOT NULL,
+  path VARCHAR(160) NOT NULL,
+  source VARCHAR(60) NOT NULL,
+  campaign VARCHAR(60) NULL,
+  device ENUM('mobile','tablet','desktop') NOT NULL,
+  browser VARCHAR(20) NOT NULL,
+  os VARCHAR(20) NOT NULL,
+  country CHAR(2) NULL,
+  member TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (created_at, visitor),
+  INDEX (visitor, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

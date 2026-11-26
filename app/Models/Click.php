@@ -26,10 +26,12 @@ final class Click
         return $days;
     }
 
-    public static function recent(int $limit = 100): array
+    public static function recent(int $limit = 100, string $status = ''): array
     {
-        return Database::pdo()->query('SELECT c.*, a.username, l.code FROM clicks c JOIN short_links l ON l.id = c.short_link_id
-            JOIN threads_accounts a ON a.id = l.account_id ORDER BY c.id DESC LIMIT ' . $limit)->fetchAll();
+        $st = Database::pdo()->prepare("SELECT c.*, a.username, l.code FROM clicks c JOIN short_links l ON l.id = c.short_link_id
+            JOIN threads_accounts a ON a.id = l.account_id WHERE (? = '' OR c.status = ?) ORDER BY c.id DESC LIMIT $limit");
+        $st->execute([$status, $status]);
+        return $st->fetchAll();
     }
 
     /** Jejak perangkat dan jaringan dihapus setelah 90 hari; status klik tetap. */
@@ -40,5 +42,18 @@ final class Click
         $db->exec('UPDATE clicks SET ip_hash = NULL, subnet_hash = NULL, trait_hash = NULL, device_id = NULL
             WHERE created_at < NOW() - INTERVAL 90 DAY AND ip_hash IS NOT NULL');
         $db->exec('UPDATE user_devices SET ip_hash = NULL WHERE last_login_at < NOW() - INTERVAL 90 DAY AND ip_hash IS NOT NULL');
+    }
+
+    /** Jumlah tiap alasan pada klik yang ditahan atau dibuang. */
+    public static function reasons(int $linkId, int $campaignId): array
+    {
+        $st = Database::pdo()->prepare("SELECT reasons_json FROM clicks WHERE short_link_id = ? AND campaign_id = ? AND status <> 'valid' ORDER BY id DESC LIMIT 5000");
+        $st->execute([$linkId, $campaignId]);
+        $total = [];
+        foreach ($st->fetchAll(\PDO::FETCH_COLUMN) as $json) {
+            foreach (array_unique(json_decode($json, true)) as $reason) $total[$reason] = ($total[$reason] ?? 0) + 1;
+        }
+        arsort($total);
+        return $total;
     }
 }

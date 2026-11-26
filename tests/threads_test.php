@@ -101,7 +101,7 @@ $check('HTTP 500', $fails(fn () => $post('', POST_URL, 500)) === Outcome::Networ
 $check('ID halaman beda ditolak', $fails(fn () => $post(html(views(9), route('123'), media()))) === Outcome::ParseError);
 $check('Pemilik halaman beda ditolak', $fails(fn () => $post(html(views(9), route(null, '999'), media()))) === Outcome::ParseError);
 $check('Hanya utas rekomendasi ditolak', $fails(fn () => $post(html(views(9), route(), related()))) === Outcome::ParseError);
-$check('Field views hilang ditolak', $fails(fn () => $post(html(route(), media()))) === Outcome::ParseError);
+$check('Field views hilang menjadi null', $post(html(route(), media()))->views === null && $post(html(media()))->views === null);
 $check('Views ganda berbeda ditolak', $fails(fn () => $post(html(views(1), views(2), route(), media()))) === Outcome::ParseError);
 $check('Views teks atau negatif ditolak', $fails(fn () => $post(html(views('675K'), route(), media()))) === Outcome::ParseError && $fails(fn () => $post(html(views(-1), route(), media()))) === Outcome::ParseError);
 $check('HTML rusak ditolak', $fails(fn () => $post('<script type="application/json">{rusak')) === Outcome::ParseError);

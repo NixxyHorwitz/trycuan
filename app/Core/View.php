@@ -8,7 +8,7 @@ final class View
     public static function render(string $template, array $data = [], string $layout = 'public', int $status = 200): void
     {
         http_response_code($status);
-        $data += ['title' => 'TryCuan', 'user' => Auth::user(), 'flash' => Session::takeFlash(), 'errors' => [], 'old' => []];
+        $data += ['title' => 'TryCuan', 'user' => Auth::user(), 'flash' => Session::takeFlash(), 'errors' => [], 'old' => [], 'seo' => null, 'active' => ''];
         $content = self::capture($template, $data);
         echo self::capture('layouts/' . $layout, $data + ['content' => $content]);
     }

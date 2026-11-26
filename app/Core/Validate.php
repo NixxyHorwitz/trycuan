@@ -18,14 +18,11 @@ final class Validate
 
     public static function email(string $email): ?string
     {
-        return strlen($email) <= 190 && filter_var($email, FILTER_VALIDATE_EMAIL) ? null : 'Masukkan email yang valid.';
+        return strlen($email) <= 190 && filter_var($email, FILTER_VALIDATE_EMAIL) && preg_match('/\.[a-z]{2,}$/iD', $email) ? null : 'Masukkan email yang valid.';
     }
 
-    public static function password(string $password): ?string
+    public static function same(string $first, string $second): ?string
     {
-        if (mb_strlen($password) < 8) return 'Password minimal 8 karakter.';
-        // bcrypt hanya membaca 72 byte pertama.
-        if (strlen($password) > 72) return 'Password maksimal 72 byte.';
-        return str_contains($password, "\0") ? 'Password berisi karakter yang tidak didukung.' : null;
+        return hash_equals($first, $second) ? null : 'Password belum sama.';
     }
 }

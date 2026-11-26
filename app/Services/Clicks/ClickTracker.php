@@ -30,7 +30,7 @@ final class ClickTracker
         if ($r->cookie === null) return null;
         $campaignId = Token::check($r->token, $code, $r->cookie);
         if ($campaignId === null) return null;
-        $link = ShortLink::resolve($code);
+        $link = ShortLink::resolve($code, $campaignId);
         if (!$link || !$link['campaign'] || (int) $link['campaign']['id'] !== $campaignId) return null;
         if (!Token::consume($r->token)) return null;
 
